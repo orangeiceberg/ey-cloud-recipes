@@ -176,3 +176,4 @@ include_recipe "resque-scheduler"
 #uncomment to include the motd customization related to the environment
 #include_recipe "env_motd"
 
+include_recipe "nginx_ember_rails"
