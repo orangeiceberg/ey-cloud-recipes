@@ -3,16 +3,37 @@
 # Recipe:: default
 #
 
+# variables
+app = node.engineyard.environment.apps.first
+vhost = app.vhosts.first
+vhost.app = OpenStruct.new({
+  name: app.name,
+  domain_name: vhost.domain_name,
+  app_type: "rails"
+})
+upstream_ports = params[:upstream_ports]
+nginx_http_port = 80
+nginx_https_port = 443
+ssh_username = node.engineyard.environment.ssh_username
+
 directory '/data/thompson/shared/system/emberapp' do
-  owner node[:users][0][:username]
-  group node[:users][0][:username]
+  owner ssh_username
+  group ssh_username
   mode 0755
 end
 
 template '/data/nginx/servers/thompson.conf' do
-  backup 10
-  source "nginx_ember_rails.conf"
+  owner ssh_username
+  group ssh_username
   mode 0644
+  source "nginx_ember_rails.conf.erb"
+  variables({
+    :app_name => vhost.app.name,
+    :vhost => vhost,
+    :port => nginx_http_port,
+    :upstream_ports => upstream_ports,
+    :framework_env => node.environment.framework_env
+  })
 end
 
 execute "sudo /etc/init.d/nginx reload"
