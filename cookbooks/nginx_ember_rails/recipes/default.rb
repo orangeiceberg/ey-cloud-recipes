@@ -36,4 +36,19 @@ template '/data/nginx/servers/thompson.conf' do
   })
 end
 
+template '/data/nginx/servers/thompson.ssl.conf' do
+  owner ssh_username
+  group ssh_username
+  mode 0644
+  source "nginx_ember_rails.conf.erb"
+  variables({
+    :app_name => vhost.app.name,
+    :vhost => vhost,
+    :port => nginx_https_port,
+    :upstream_ports => upstream_ports,
+    :framework_env => node.environment.framework_env,
+    :ssl => true
+  })
+end
+
 execute "sudo /etc/init.d/nginx reload"

@@ -75,11 +75,7 @@ server {
     passenger_set_cgi_param SERVER_PORT            80;
     <% end %>
 
-<% if @vhost.app.app_type.to_sym == :rails %>
     rails_env <%= @framework_env %>;
-<% else %>
-    rack_env <%= @framework_env %>;
-<% end %>
 
     passenger_min_instances 2;
   }
