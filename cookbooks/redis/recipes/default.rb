@@ -3,6 +3,12 @@
 # Recipe:: default
 #
 
+redis_version = node[:redis][:version]
+redis_config_file_version = redis_version.split('.')[0..1].join('.')
+redis_url = "http://download.redis.io/releases/redis-#{redis_version}.tar.gz"
+redis_installer_directory = '/opt/redis-source'
+bin_path = '/usr/local/bin'
+
 if ['util'].include?(node[:instance_role])
   if node[:name] == node[:redis][:utility_name]
 
@@ -10,15 +16,30 @@ if ['util'].include?(node[:instance_role])
       variables 'vm.overcommit_memory' => 1
     end
 
-    enable_package "dev-db/redis" do
-      version node[:redis][:version]
-      override_hardmask true
-      unmask :true
+    # Download Redis, if it hasn't been downloaded yet
+    remote_file "/opt/redis-#{redis_version}.tar.gz" do
+      source "#{redis_url}"
+      owner node[:owner_name]
+      group node[:owner_name]
+      mode 0644
+      backup 0
+      not_if { FileTest.exists?(redis_installer_directory) }
     end
 
-    package "dev-db/redis" do
-      version node[:redis][:version]
-      action :upgrade
+    execute "unarchive Redis installer" do
+      cwd "/opt"
+      command "tar zxf redis-#{redis_version}.tar.gz && sync"
+      not_if { FileTest.directory?(redis_installer_directory) }
+    end
+
+    execute "rename /opt/redis-#{redis_version} to /opt/redis-source" do
+      command "mv /opt/redis-#{redis_version} #{redis_installer_directory}"
+      not_if { FileTest.directory?(redis_installer_directory) }
+    end
+
+    execute "run redis-source/make install" do
+      cwd redis_installer_directory
+      command "make install"
     end
 
     directory "#{node[:redis][:basedir]}" do
@@ -33,7 +54,7 @@ if ['util'].include?(node[:instance_role])
       owner 'root'
       group 'root'
       mode 0644
-      source "redis.conf.erb"
+      source "redis-#{redis_config_file_version}.conf.erb"
       variables({
         :pidfile => node[:redis][:pidfile],
         :basedir => node[:redis][:basedir],
@@ -48,13 +69,6 @@ if ['util'].include?(node[:instance_role])
         :rdbcompression => node[:redis][:rdbcompression],
         :hz => node[:redis][:hz]
       })
-    end
-
-    # redis-server is in /usr/bin on stable-v2, /usr/sbin for stable-v4
-    if Chef::VERSION[/^0.6/]
-      bin_path = "/usr/bin/redis-server"
-    else
-      bin_path = "/usr/sbin/redis-server"
     end
 
     template "/data/monit.d/redis_util.monitrc" do
@@ -80,7 +94,7 @@ end
 
 if ['solo', 'app', 'app_master', 'util'].include?(node[:instance_role])
   instances = node[:engineyard][:environment][:instances]
-  redis_instance = (node[:instance_role][/solo/] && instances.length == 1) ? instances[0] : instances.find{|i| i[:name].to_s[/redis/]}
+  redis_instance = (node[:instance_role][/solo/] && instances.length == 1) ? instances[0] : instances.find{|i| "redis" == i[:name]}
 
   if redis_instance
     ip_address = `ping -c 1 #{redis_instance[:private_hostname]} | awk 'NR==1{gsub(/\\(|\\)/,"",$3); print $3}'`.chomp
