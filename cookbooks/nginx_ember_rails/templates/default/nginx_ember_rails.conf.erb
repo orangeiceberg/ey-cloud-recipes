@@ -20,22 +20,22 @@ server {
 
   client_max_body_size 100M;
 
-  root /data/<%= @vhost.app.name %>/current/public;
+  root /data/<%= @vhost.name %>/current/public;
 
   <% if @ssl %>
-  access_log /var/log/engineyard/nginx/<%= @vhost.app.name %>.ssl.access.log main;
-  error_log /var/log/engineyard/nginx/<%= @vhost.app.name %>.ssl.error.log notice;
+  access_log /var/log/engineyard/nginx/<%= @vhost.name %>.ssl.access.log main;
+  error_log /var/log/engineyard/nginx/<%= @vhost.name %>.ssl.error.log notice;
   <% else %>
-  access_log /var/log/engineyard/nginx/<%= @vhost.app.name %>.access.log main;
-  error_log /var/log/engineyard/nginx/<%= @vhost.app.name %>.error.log notice;
+  access_log /var/log/engineyard/nginx/<%= @vhost.name %>.access.log main;
+  error_log /var/log/engineyard/nginx/<%= @vhost.name %>.error.log notice;
   <% end %>
 
 #  location ~ ^/(images|assets|javascripts|stylesheets)/ {
 #    expires 10y;
   <% if @ssl %>
-#    try_files  $uri $uri/index.html /last_assets/$uri /last_assets/$uri.html @app_<%= @vhost.app.name %>ssl;
+#    try_files  $uri $uri/index.html /last_assets/$uri /last_assets/$uri.html @app_<%= @vhost.name %>ssl;
   <% else %>
-#    try_files  $uri $uri/index.html /last_assets/$uri /last_assets/$uri.html @app_<%= @vhost.app.name %>;
+#    try_files  $uri $uri/index.html /last_assets/$uri /last_assets/$uri.html @app_<%= @vhost.name %>;
   <% end %>
 #  }
 
@@ -55,9 +55,9 @@ server {
   }
 
   <% if @ssl %>
-  location @app_<%= @vhost.app.name %>ssl {
+  location @app_<%= @vhost.name %>ssl {
   <% else %>
-  location @app_<%= @vhost.app.name %> {
+  location @app_<%= @vhost.name %> {
   <% end %>
 
     passenger_enabled on;
@@ -81,7 +81,7 @@ server {
   }
 
   location / {
-    root /data/<%= @vhost.app.name %>/current/public/system/emberapp;
+    root /data/<%= @vhost.name %>/current/public/system/emberapp;
   if (-f $document_root/system/maintenance.html) { return 503; }
 
     try_files  $uri /index.html;
@@ -89,15 +89,15 @@ server {
 
   location ~ ^/(api|page) {
   <% if @ssl %>
-    try_files  $uri @app_<%= @vhost.app.name %>ssl;
+    try_files  $uri @app_<%= @vhost.name %>ssl;
   <% else %>
-    try_files  $uri @app_<%= @vhost.app.name %>;
+    try_files  $uri @app_<%= @vhost.name %>;
   <% end %>
   }
 
 <% if @ssl %>
-include /etc/nginx/servers/<%= @vhost.app.name %>/custom.ssl.conf;
+include /etc/nginx/servers/<%= @vhost.name %>/custom.ssl.conf;
 <% else %>
-include /etc/nginx/servers/<%= @vhost.app.name %>/custom.conf;
+include /etc/nginx/servers/<%= @vhost.name %>/custom.conf;
 <% end %>
 }
