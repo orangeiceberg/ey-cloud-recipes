@@ -82,7 +82,7 @@ server {
 
   location / {
     root /data/<%= @vhost.name %>/current/public/system/emberapp;
-  if (-f $document_root/system/maintenance.html) { return 503; }
+  if (-f /data/<%= @vhost.name %>/current/public/system/maintenance.html) { return 503; }
 
     try_files  $uri /index.html;
   }
